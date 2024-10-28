@@ -39,7 +39,7 @@
         dest: /srv/www
         remote_src: yes
       become: yes
-    - name: Copia da configuracao do Wordpress
+    - name: Copia da configuracao do Apache2
       ansible.builtin.copy:
         src: files/wordpress.conf
         dest: /etc/apache2/sites-available/000-default.conf
@@ -59,8 +59,8 @@
         regexp: '{{ item.regexp }}'
         replace: '{{ item.replace }}'
       with_items:
-      - {regexp: 'database_name_here',  replace: 'mysql_db'}
-      - {regexp: 'username_here',  replace: 'mysql_user'}
+      - {regexp: 'database_name_here',  replace: 'wordpress_db'}
+      - {regexp: 'username_here',  replace: 'wordpress_user'}
       - {regexp: 'password_here',  replace: '12345'}
       - {regexp: 'localhost',  replace: '192.168.1.21'}
       become: yes
@@ -81,6 +81,12 @@
       become: yes
 
 - hosts: mysql
+  handlers:
+    - name: restart_mysql
+      service:
+        name: mysql
+        state: restarted
+      become: yes
   tasks:
   - name: Instalacao de Dependencias
     ansible.builtin.apt:
@@ -92,15 +98,15 @@
     become: yes
   - name: Criacao o banco de dados MySQL
     community.mysql.mysql_db:
-      name: mysql_db
+      name: wordpress_db
       state: present
       login_unix_socket: /run/mysqld/mysqld.sock
     become: yes
   - name: Criacao de usuario e definicao de privilegios
     community.mysql.mysql_user:
-      name: mysql_user
+      name: wordpress_user
       password: 12345
-      priv: 'mysql_db.*:SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER'
+      priv: 'wordpress_db.*:SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER'
       state: present
       login_unix_socket: /run/mysqld/mysqld.sock
       host: '{{ item }}'
@@ -110,9 +116,12 @@
     - '192.168.1.20'
     become: yes
   - name: Substituicao de address-bind do MySQL
-    ansible.builtin.lineinfile:
+    ansible.builtin.replace:
       path: /etc/mysql/mysql.conf.d/mysqld.cnf
-      search_string: 'bind-address            = 127.0.0.1'
-      line: 'bind-address            = 0.0.0.0'
+      regexp: '127.0.0.1'
+      replace: '0.0.0.0'
     become: yes
+    notify:
+        - restart_mysql
+    
     
