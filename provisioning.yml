@@ -48,25 +48,25 @@
         - restart_apache
     - name: Copia da configuracao do Wordpress
       ansible.builtin.copy:
-        src: /srv/www/wordpress/wp-config-sample.php
-        dest: /srv/www/wordpress/wp-config.php
+        src: '{{ wp_dir }}/wp-config-sample.php'
+        dest: '{{ wp_dir }}/wp-config.php'
         force: no
         remote_src: yes
       become: yes
     - name: Cofniguracao dos parametros do Banco de Dados
       ansible.builtin.replace:
-        path: /srv/www/wordpress/wp-config.php
+        path: '{{ wp_dir }}/wp-config.php'
         regexp: '{{ item.regexp }}'
         replace: '{{ item.replace }}'
       with_items:
-      - {regexp: 'database_name_here',  replace: 'wordpress_db'}
-      - {regexp: 'username_here',  replace: 'wordpress_user'}
-      - {regexp: 'password_here',  replace: '12345'}
-      - {regexp: 'localhost',  replace: '192.168.1.21'}
+      - {regexp: 'database_name_here',  replace: '{{ wp_db_name }}'}
+      - {regexp: 'username_here',  replace: '{{ wp_db_user }}'}
+      - {regexp: 'password_here',  replace: '{{ wp_db_pass }}'}
+      - {regexp: 'localhost',  replace: '{{ db_ip }}'}
       become: yes
     - name: Substuticao de variaveis de seguranca
       ansible.builtin.lineinfile:
-        path: /srv/www/wordpress/wp-config.php
+        path: '{{ wp_dir }}/wp-config.php'
         search_string: '{{ item.search_string }}'
         line: '{{ item.line }}'
       with_items:
@@ -98,22 +98,22 @@
     become: yes
   - name: Criacao o banco de dados MySQL
     community.mysql.mysql_db:
-      name: wordpress_db
+      name: '{{ wp_db_name }}'
       state: present
       login_unix_socket: /run/mysqld/mysqld.sock
     become: yes
   - name: Criacao de usuario e definicao de privilegios
     community.mysql.mysql_user:
-      name: wordpress_user
-      password: 12345
-      priv: 'wordpress_db.*:SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER'
+      name: '{{ wp_db_user }}'
+      password: '{{ wp_db_pass }}'
+      priv: '{{ wp_db_name }}.*:SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER'
       state: present
       login_unix_socket: /run/mysqld/mysqld.sock
       host: '{{ item }}'
     with_items:
     - 'localhost'
     - '127.0.0.1'
-    - '192.168.1.20'
+    - '{{ wp_ip }}'
     become: yes
   - name: Substituicao de address-bind do MySQL
     ansible.builtin.replace:
