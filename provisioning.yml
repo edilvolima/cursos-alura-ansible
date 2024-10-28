@@ -40,8 +40,8 @@
         remote_src: yes
       become: yes
     - name: Copia da configuracao do Apache2
-      ansible.builtin.copy:
-        src: files/wordpress.conf
+      ansible.builtin.template:
+        src: templates/wordpress.conf.j2
         dest: /etc/apache2/sites-available/000-default.conf
       become: yes
       notify:
@@ -53,7 +53,7 @@
         force: no
         remote_src: yes
       become: yes
-    - name: Cofniguracao dos parametros do Banco de Dados
+    - name: Configuracao dos parametros do Banco de Dados
       ansible.builtin.replace:
         path: '{{ wp_dir }}/wp-config.php'
         regexp: '{{ item.regexp }}'

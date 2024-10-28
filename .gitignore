@@ -1,4 +1,6 @@
 .vscode
 .history
-ubuntu*
-mysql*
+ubuntu
+ubuntu.pub
+mysql
+mysql.pub
